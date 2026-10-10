@@ -97,6 +97,7 @@ examples/
 tests/
 default.project.json
 ```
+[![Architecture diagram of eras-hallow/mathtex](https://gitdiagram.com/eras-hallow/mathtex/diagram.png)](https://gitdiagram.com/eras-hallow/mathtex?utm_source=readme&utm_medium=picture)
 
 ## Contribuer
 
