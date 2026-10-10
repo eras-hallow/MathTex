@@ -168,4 +168,10 @@ function Expression:Destroy()
 	self._destroyed = true
 end
 
+function MathTex.render(parent: Instance, source: string, options: Options?): Expression
+	local expression = MathTex.new(source, options)
+	expression:Render(parent)
+	return expression
+end
+
 return MathTex

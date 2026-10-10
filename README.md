@@ -17,6 +17,10 @@ Prototype utilisable pour des expressions mathématiques courantes. L'API publiq
 - Espaces mathématiques `\,`, `\:`, `\;`, `\quad`, `\qquad` et `\!`.
 - Exposants et indices, seuls ou groupés, y compris les deux sur un même atome.
 - `\frac{numérateur}{dénominateur}`, `\sqrt{contenu}` et `\sqrt[indice]{contenu}`, y compris l'imbrication.
+- Texte courant avec espaces préservés via `\text{...}` et `\operatorname{...}`.
+- Délimiteurs verticaux adaptatifs via `\left(...\right)`, `\left[...\right]`, `\left\{...\right\}` et `\left|...\right|`.
+- Matrices `matrix`, `pmatrix`, `bmatrix`, `Bmatrix`, `vmatrix`, `Vmatrix` et `cases`, avec validation du nombre de colonnes.
+- Opérateurs courants comme `\sin`, `\cos`, `\log`, `\lim`, `\min`, `\max`, `\land` et `\lor`.
 - Parenthèses et crochets littéraux ; les accolades non échappées servent au groupement.
 - Mise en page fondée sur les mesures de `TextService:GetTextSize`; fractions, scripts et racines ont des boîtes calculées avant le rendu.
 - Rendu en `Frame`, `TextLabel` et `Frame` de barre, avec mesure, nouveau rendu sans orphelins, et destruction. Le rendu est limité à 1024 primitives par expression.
@@ -38,17 +42,13 @@ Connectez Roblox Studio au serveur Rojo avec le plugin Rojo. La bibliothèque es
 ```lua
 local MathTex = require(game:GetService("ReplicatedStorage").MathTex)
 
-local equation = MathTex.new(
-	[[\frac{-b+\sqrt{b^2-4ac}}{2a}]],
-	{
-		FontSize = 32,
-		Color = Color3.new(1, 1, 1),
-		Backend = "Auto",
-	}
+local equation = MathTex.render(
+  script.Parent,
+  [[\left(\frac{\text{vitesse moyenne}}{2a}\right)^2]],
+  { FontSize = 32, Color = Color3.new(1, 1, 1) }
 )
 
 local size = equation:Measure()
-local rendered = equation:Render(script.Parent)
 
 -- Quand le rendu n'est plus nécessaire :
 equation:Destroy()
@@ -66,11 +66,13 @@ equation:Destroy()
 | `Backend` | `"Auto"`, `"Native"` ou `"Image"` | `"Auto"` | Auto choisit un backend compatible configuré. Native impose le rendu natif. Image échoue explicitement car aucun fournisseur d'images n'est inclus. |
 | `FitToContainer` | booléen | `true` | Réduit le rendu pour qu'il tienne dans un `GuiObject` ou un `ScreenGui`. Mettre à `false` pour conserver une taille fixe et un ancrage en haut à gauche. |
 
+Pour un affichage direct, `MathTex.render(parent, source, options)` crée et affiche l'expression en un appel, puis retourne l'objet pour le mesurer ou le détruire. L'API `MathTex.new(...):Render(parent)` reste disponible si la mesure doit précéder le rendu.
+
 Les sources dépassant 4096 octets, les options inconnues ou invalides, les commandes inconnues, les groupes malformés et les arguments manquants ou vides produisent une erreur explicite. Les espaces blancs ordinaires sont ignorés selon la convention mathématique.
 
 ## Limites connues
 
-- Ce projet n'est pas un moteur TeX et ne prend pas en charge les macros, environnements, matrices, alignements, styles mathématiques ni délimiteurs extensibles.
+- Ce projet n'est pas un moteur TeX complet: les macros, `array`, `align`, les styles mathématiques et de nombreux environnements ne sont pas pris en charge. `\left` et `\right` agrandissent les glyphes pris en charge, sans reproduire toute la typographie TeX des délimiteurs.
 - Les commandes prises en charge sont uniquement celles répertoriées dans `src/Symbols.luau`, ainsi que les commandes structurelles et d'espacement décrites ci-dessus.
 - Les règles de placement et métriques sont une approximation typographique pour UI, pas un moteur TeX. Les polices peuvent différer dans leur prise en charge des glyphes Unicode.
 - Le backend image est absent. Roblox ne compile ni n'interprète les sources LaTeX directement. Une future extension devra fournir un fournisseur réel et autorisé (générateur externe ou ressources importées), un cache et une politique explicite d'échec/repli.

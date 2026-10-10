@@ -15,10 +15,7 @@ holder.Position = UDim2.fromOffset(24, 24)
 holder.Size = UDim2.fromOffset(500, 120)
 holder.Parent = screenGui
 
-local equation = MathTex.new([[\frac{-b+\sqrt{b^2-4ac}}{2a}]], {
+local equation = MathTex.render(holder, [[\left(\frac{\text{average speed}}{2a}\right)^2]], {
 	FontSize = 32,
 	Color = Color3.new(1, 1, 1),
-	Backend = "Auto",
 })
-
-equation:Render(holder)

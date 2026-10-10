@@ -83,6 +83,8 @@ end
 layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): Result
 	if node.kind == "Glyph" then
 		return textResult(node.text, fontSize, measureText)
+	elseif node.kind == "Text" then
+		return textResult(node.text, fontSize, measureText)
 	elseif node.kind == "Space" then
 		return { width = fontSize * node.width, height = fontSize, baseline = fontSize * 0.78, items = {} }
 	elseif node.kind == "Sequence" then
@@ -167,6 +169,71 @@ layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): R
 			width = base.width + scriptWidth,
 			height = bottom - top,
 			baseline = base.baseline - top,
+			items = items,
+		}
+	elseif node.kind == "Matrix" then
+		local cells: { { Result } } = {}
+		local columnWidths: { number } = {}
+		local rowHeights: { number } = {}
+		for rowIndex, row in node.rows do
+			local measuredRow: { Result } = {}
+			local rowHeight = 0
+			for columnIndex, cell in row do
+				local box = layoutSequence(cell.children, fontSize, measureText)
+				measuredRow[columnIndex] = box
+				columnWidths[columnIndex] = math.max(columnWidths[columnIndex] or 0, box.width)
+				rowHeight = math.max(rowHeight, box.height)
+			end
+			cells[rowIndex] = measuredRow
+			rowHeights[rowIndex] = rowHeight
+		end
+
+		local columnGap = fontSize * 0.8
+		local rowGap = fontSize * 0.35
+		local width = 0
+		for _, columnWidth in columnWidths do
+			width += columnWidth
+		end
+		width += math.max(0, #columnWidths - 1) * columnGap
+		local height = 0
+		for _, rowHeight in rowHeights do
+			height += rowHeight
+		end
+		height += math.max(0, #rowHeights - 1) * rowGap
+
+		local items: { DrawItem } = {}
+		local y = 0
+		for rowIndex, measuredRow in cells do
+			local x = 0
+			for columnIndex, box in measuredRow do
+				shifted(box.items, x + (columnWidths[columnIndex] - box.width) / 2, y + (rowHeights[rowIndex] - box.height) / 2, items)
+				x += columnWidths[columnIndex] + columnGap
+			end
+			y += rowHeights[rowIndex] + rowGap
+		end
+		return { width = width, height = height, baseline = height / 2, items = items }
+	elseif node.kind == "Delimited" then
+		local body = layoutSequence(node.body.children, fontSize, measureText)
+		local delimiterSize = math.max(fontSize, body.height * 1.12)
+		local left = if node.left ~= "" then textResult(node.left, delimiterSize, measureText) else nil
+		local right = if node.right ~= "" then textResult(node.right, delimiterSize, measureText) else nil
+		local gap = fontSize * 0.08
+		local leftWidth = if left ~= nil then left.width + gap else 0
+		local rightWidth = if right ~= nil then right.width + gap else 0
+		local height = math.max(body.height, if left ~= nil then left.height else 0, if right ~= nil then right.height else 0)
+		local bodyY = (height - body.height) / 2
+		local items: { DrawItem } = {}
+		if left ~= nil then
+			shifted(left.items, 0, (height - left.height) / 2, items)
+		end
+		shifted(body.items, leftWidth, bodyY, items)
+		if right ~= nil then
+			shifted(right.items, leftWidth + body.width + gap, (height - right.height) / 2, items)
+		end
+		return {
+			width = leftWidth + body.width + rightWidth,
+			height = height,
+			baseline = bodyY + body.baseline,
 			items = items,
 		}
 	end
