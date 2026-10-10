@@ -38,24 +38,29 @@ local function install()
 		error("MathTex installer: ReplicatedStorage.MathTex already exists; rename or remove it before installing", 0)
 	end
 
-	local staging = Instance.new("Folder")
+	local staging = Instance.new("ModuleScript")
 	staging.Name = "MathTex_Installing_" .. HttpService:GenerateGUID(false)
 	staging.Parent = ReplicatedStorage
 
 	local ok, problem = pcall(function()
 		for _, path in FILES do
 			local source = HttpService:GetAsync(SOURCE_URL .. path)
-			local segments = string.split(path, "/")
-			local parent: Instance = staging
-			for index = 1, #segments - 1 do
-				parent = getOrCreateFolder(parent, segments[index])
-			end
+			local target: ModuleScript
+			if path == "init.luau" then
+				target = staging
+			else
+				local segments = string.split(path, "/")
+				local parent: Instance = staging
+				for index = 1, #segments - 1 do
+					parent = getOrCreateFolder(parent, segments[index])
+				end
 
-			local fileName = segments[#segments]
-			local module = Instance.new("ModuleScript")
-			module.Name = string.gsub(fileName, "%.luau$", "")
-			module.Parent = parent
-			ScriptEditorService:UpdateSourceAsync(module, function()
+				local fileName = segments[#segments]
+				target = Instance.new("ModuleScript")
+				target.Name = string.gsub(fileName, "%.luau$", "")
+				target.Parent = parent
+			end
+			ScriptEditorService:UpdateSourceAsync(target, function()
 				return source
 			end)
 		end
