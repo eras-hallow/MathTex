@@ -16,6 +16,8 @@ Usable prototype for common mathematical expressions. The public API is intentio
 - Greek letters, selected operators and relations, arrows, and common symbols.
 - Math spacing commands `\,`, `\:`, `\;`, `\quad`, `\qquad`, and `\!`.
 - Superscripts and subscripts, grouped or ungrouped, including both on one atom.
+- The native backend uses RichText internally to apply the computed size to each glyph. RichText tags in the source are not interpreted: `<`, `>`, and `&` are escaped and remain literal text.
+- Each script level is laid out at 70% of its parent level's size. `\sum` and `\prod` are enlarged to 145%; when scripts are attached, their limits are centered. `\lim`, `\min`, `\max`, `\sup`, and `\inf` center their limits when scripted, without enlargement. `\int` is enlarged to 135% and retains side scripts.
 - `\frac{numerator}{denominator}`, `\sqrt{content}`, and `\sqrt[index]{content}`, including nesting.
 - Plain text with preserved spaces using `\text{...}` and `\operatorname{...}`.
 - Vertically adaptive delimiters using `\left(...\right)`, `\left[...\right]`, `\left\{...\right\}`, and `\left|...\right|`.
@@ -24,8 +26,6 @@ Usable prototype for common mathematical expressions. The public API is intentio
 - Literal parentheses and brackets; unescaped braces are grouping syntax.
 - Layout based on `TextService:GetTextSize`; fractions, scripts, and roots are measured before rendering.
 - Rendering with `Frame`, `TextLabel`, and bar `Frame` instances, with measurement, replacement without orphaned instances, and destruction. Rendering is limited to 1024 primitives per expression.
-
-`\sum`, `\prod`, and `\int` are currently glyphs with standard script placement. Specialized limit placement for large operators is not implemented.
 
 ## Installation and Studio Sync
 
@@ -54,6 +54,34 @@ local size = equation:Measure()
 equation:Destroy()
 ```
 
+### Writing an Equation in Luau
+
+The math source is a string passed to MathTex; it is not evaluated as Lua code. A Luau long-bracket string preserves backslashes, so `\alpha` does not need to be written as `\\alpha`:
+
+```lua
+local source = [=[
+\sum_{i=1}^{n} \frac{x_i^2}{\sqrt[3]{y}}
+]=]
+local equation = MathTex.render(container, source, { FontSize = 32 })
+```
+
+`[=[...]=]` also lets the content contain `]]` without ending the string. With a quoted Lua string, escape each backslash, for example `"\\alpha"`.
+`container` must be a `GuiObject` (such as a `Frame`) or a `LayerCollector` (such as a `ScreenGui`). See the [complete client example](./examples/Basic.client.luau) for UI creation and Roblox setup.
+
+The parser supports these constructs (whitespace outside `\text{...}` is ignored):
+
+| Syntax | Example |
+| --- | --- |
+| Grouping and scripts | `x_{i+1}^{2}`; an unbraced script consumes one atom only (`x^ab` means `x` to the power `a`, followed by `b`). |
+| Fractions and roots | `\frac{a}{b}`; `\sqrt[3]{x}` |
+| Literal text | `\text{average speed}`; content, including RichText tags, is not interpreted as commands. |
+| Registered operators | `\alpha`, `\times`, `\le`, `\sin`, `\sum`, etc. See the full list in [Symbols.luau](./src/Symbols.luau). |
+| Delimiters | `\left( ... \right)` and supported variants, including `\left\{ ... \right\}`. |
+| Matrices | `\begin{bmatrix}a&b\\c&d\end{bmatrix}`; rows must have the same number of columns. |
+| Math spacing | `\,`, `\:`, `\;`, `\quad`, `\qquad`, `\!`. |
+
+The parser does not implement full LaTeX: `\newcommand`, `\displaystyle`, `\textbf`, `\color`, `\dfrac`, `array`, and `align` are not supported. There is no `$...$` or `$$...$$` math mode; pass the expression directly without math-mode delimiters. Unknown commands raise an error.
+
 `Render(parent)` accepts a `GuiObject` or `LayerCollector` (such as `ScreenGui`) and returns the created root `Frame`. By default, rendering fits a `GuiObject` or the `ScreenGui` viewport, shrinking uniformly without exceeding its base size and staying centered. Other `LayerCollector` instances retain a fixed size. Calling `Render` again destroys the previous rendering after creating the new one.
 
 ## Options
@@ -75,6 +103,7 @@ Sources longer than 4096 bytes, unknown or invalid options, unknown commands, ma
 - This is not a full TeX engine: macros, `array`, `align`, math styles, and many environments are unsupported. `\left` and `\right` enlarge supported glyphs, but do not reproduce all of TeX's delimiter typography.
 - Supported commands are limited to those listed in `src/Symbols.luau`, along with the structural and spacing commands described above.
 - Placement rules and metrics are a typographic approximation for UI, not a TeX engine. Font support for Unicode glyphs may vary.
+- Operator sizes and placements use fixed factors; the engine does not distinguish inline and display math styles.
 - The image backend is absent. Roblox does not compile or interpret LaTeX source directly. A future extension would need a real, authorized provider (external generator or imported resources), a cache, and an explicit failure/fallback policy.
 - This version makes no network calls and uses no image URLs. Any future network integration must document allowed domains in Roblox security settings, how resources are generated/loaded, and offline behavior.
 

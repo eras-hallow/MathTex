@@ -2,7 +2,8 @@
 
 local AST = {}
 
-export type Glyph = { kind: "Glyph", text: string }
+export type OperatorStyle = "limits" | "integral" | "namedLimits"
+export type Glyph = { kind: "Glyph", text: string, operatorStyle: OperatorStyle? }
 export type Text = { kind: "Text", text: string }
 export type Space = { kind: "Space", width: number }
 export type Sequence = { kind: "Sequence", children: { Node } }
@@ -15,8 +16,8 @@ export type MatrixRow = { Sequence }
 export type Matrix = { kind: "Matrix", rows: { MatrixRow } }
 export type Node = Glyph | Text | Space | Sequence | Group | Fraction | Root | Scripts | Delimited | Matrix
 
-function AST.glyph(text: string): Glyph
-	return { kind = "Glyph", text = text }
+function AST.glyph(text: string, operatorStyle: OperatorStyle?): Glyph
+	return { kind = "Glyph", text = text, operatorStyle = operatorStyle }
 end
 
 function AST.text(text: string): Text

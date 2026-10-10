@@ -1,8 +1,9 @@
 --!strict
 
+local AST = require(script.Parent.AST)
 local Symbols = {}
 
-export type SymbolMetadata = { text: string }
+export type SymbolMetadata = { text: string, operatorStyle: AST.OperatorStyle? }
 
 local registry: { [string]: SymbolMetadata } = {
 	alpha = { text = "α" }, beta = { text = "β" }, gamma = { text = "γ" }, delta = { text = "δ" },
@@ -20,12 +21,15 @@ local registry: { [string]: SymbolMetadata } = {
 	Rightarrow = { text = "⇒" }, Leftarrow = { text = "⇐" }, mapsto = { text = "↦" },
 	infty = { text = "∞" }, partial = { text = "∂" }, nabla = { text = "∇" },
 	forall = { text = "∀" }, exists = { text = "∃" }, emptyset = { text = "∅" },
-	sum = { text = "∑" }, prod = { text = "∏" }, int = { text = "∫" },
+	sum = { text = "∑", operatorStyle = "limits" }, prod = { text = "∏", operatorStyle = "limits" },
+	int = { text = "∫", operatorStyle = "integral" },
 	sin = { text = "sin" }, cos = { text = "cos" }, tan = { text = "tan" }, cot = { text = "cot" },
 	sec = { text = "sec" }, csc = { text = "csc" }, arcsin = { text = "arcsin" }, arccos = { text = "arccos" },
 	arctan = { text = "arctan" }, sinh = { text = "sinh" }, cosh = { text = "cosh" }, tanh = { text = "tanh" },
-	log = { text = "log" }, ln = { text = "ln" }, exp = { text = "exp" }, lim = { text = "lim" },
-	min = { text = "min" }, max = { text = "max" }, sup = { text = "sup" }, inf = { text = "inf" },
+	log = { text = "log" }, ln = { text = "ln" }, exp = { text = "exp" },
+	lim = { text = "lim", operatorStyle = "namedLimits" },
+	min = { text = "min", operatorStyle = "namedLimits" }, max = { text = "max", operatorStyle = "namedLimits" },
+	sup = { text = "sup", operatorStyle = "namedLimits" }, inf = { text = "inf", operatorStyle = "namedLimits" },
 	det = { text = "det" }, gcd = { text = "gcd" }, ldots = { text = "…" }, cdots = { text = "⋯" },
 	land = { text = "∧" }, lor = { text = "∨" }, neg = { text = "¬" }, oplus = { text = "⊕" }, otimes = { text = "⊗" },
 	["%"] = { text = "%" }, ["{"] = { text = "{" }, ["}"] = { text = "}" },
@@ -55,7 +59,7 @@ function Symbols.register(name: string, metadata: SymbolMetadata)
 	assert(type(name) == "string" and string.match(name, "^[A-Za-z]+$") ~= nil, "Symbol name must contain only letters")
 	assert(type(metadata) == "table" and type(metadata.text) == "string" and metadata.text ~= "", "Symbol metadata must contain non-empty text")
 	assert(registry[name] == nil, "Symbol is already registered: \\" .. name)
-	registry[name] = { text = metadata.text }
+	registry[name] = { text = metadata.text, operatorStyle = metadata.operatorStyle }
 end
 
 return Symbols

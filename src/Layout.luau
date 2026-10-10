@@ -82,7 +82,8 @@ end
 
 layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): Result
 	if node.kind == "Glyph" then
-		return textResult(node.text, fontSize, measureText)
+		local glyphScale = if node.operatorStyle == "limits" then 1.45 elseif node.operatorStyle == "integral" then 1.35 else 1
+		return textResult(node.text, fontSize * glyphScale, measureText)
 	elseif node.kind == "Text" then
 		return textResult(node.text, fontSize, measureText)
 	elseif node.kind == "Space" then
@@ -145,10 +146,36 @@ layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): R
 		})
 		return { width = bodyX + body.width + 1, height = height, baseline = baseline - top, items = items }
 	elseif node.kind == "Scripts" then
+		local operatorStyle = if node.base.kind == "Glyph" then node.base.operatorStyle else nil
 		local base = layoutNode(node.base, fontSize, measureText)
 		local scriptFontSize = fontSize * 0.7
 		local superscript = if node.superscript ~= nil then layoutNode(node.superscript, scriptFontSize, measureText) else nil
 		local subscript = if node.subscript ~= nil then layoutNode(node.subscript, scriptFontSize, measureText) else nil
+		if operatorStyle ~= nil and operatorStyle ~= "integral" then
+			local gap = fontSize * 0.06
+			local topHeight = if superscript ~= nil then superscript.height else 0
+			local baseY = topHeight + (if superscript ~= nil then gap else 0)
+			local subscriptY = baseY + base.height + (if subscript ~= nil then gap else 0)
+			local width = math.max(
+				base.width,
+				if superscript ~= nil then superscript.width else 0,
+				if subscript ~= nil then subscript.width else 0
+			)
+			local items: { DrawItem } = {}
+			shifted(base.items, (width - base.width) / 2, baseY, items)
+			if superscript ~= nil then
+				shifted(superscript.items, (width - superscript.width) / 2, 0, items)
+			end
+			if subscript ~= nil then
+				shifted(subscript.items, (width - subscript.width) / 2, subscriptY, items)
+			end
+			return {
+				width = width,
+				height = baseY + base.height + (if subscript ~= nil then gap + subscript.height else 0),
+				baseline = baseY + base.baseline,
+				items = items,
+			}
+		end
 		local superscriptY = if superscript ~= nil then base.baseline - fontSize * 0.88 - superscript.height else 0
 		local subscriptY = if subscript ~= nil then base.baseline + fontSize * 0.08 else 0
 		local top = math.min(0, superscriptY)

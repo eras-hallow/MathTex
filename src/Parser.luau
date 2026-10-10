@@ -268,7 +268,7 @@ parsePrimary = function(state: State): Node
 			if symbol == nil then
 				fail(token, "unknown command \\" .. token.value)
 			end
-			return AST.glyph(symbol.text)
+			return AST.glyph(symbol.text, symbol.operatorStyle)
 		end
 	elseif token.kind == "RBrace" then
 		fail(token, "unexpected closing brace")

@@ -25,6 +25,42 @@ return function()
 	local nested = Layout.calculate(Parser.parse([[\sqrt{\frac{x_1}{y^2}}]]), 24, measureText)
 	assert(nested.width > fraction.width and nested.height > 0)
 
+	local standaloneSum = Layout.calculate(Parser.parse([[\sum]]), 20, measureText)
+	assert(standaloneSum.items[1].fontSize == 29)
+
+	local largeOperator = Layout.calculate(Parser.parse([[\sum_{i=1}^{n}]]), 20, measureText)
+	local sumGlyph = nil
+	local upperLimit = nil
+	local lowerLimit = nil
+	for _, item in largeOperator.items do
+		if item.text == "∑" then
+			sumGlyph = item
+		elseif item.text == "n" then
+			upperLimit = item
+		elseif item.text == "i" then
+			lowerLimit = item
+		end
+	end
+	assert(sumGlyph ~= nil and sumGlyph.fontSize == 29)
+	assert(upperLimit ~= nil and upperLimit.fontSize == 14 and upperLimit.y < sumGlyph.y)
+	assert(lowerLimit ~= nil and lowerLimit.fontSize == 14 and lowerLimit.y > sumGlyph.y)
+
+	local integral = Layout.calculate(Parser.parse([[\int_{a}^{b}]]), 20, measureText)
+	local integralGlyph = nil
+	local integralLimit = nil
+	for _, item in integral.items do
+		if item.text == "∫" then
+			integralGlyph = item
+		elseif item.text == "b" then
+			integralLimit = item
+		end
+	end
+	assert(integralGlyph ~= nil and integralGlyph.fontSize == 27)
+	assert(integralLimit ~= nil and integralLimit.x >= integralGlyph.width)
+
+	local namedLimit = Layout.calculate(Parser.parse([[\lim_{x\to0}]]), 20, measureText)
+	assert(namedLimit.height > 20)
+
 	local halfSize = Vector2.new(simple.width / 2, simple.height / 2)
 	assert(math.abs(Layout.fitScale(simple, halfSize) - 0.5) < 0.001)
 	assert(Layout.fitScale(simple, Vector2.new(simple.width * 2, simple.height * 2)) == 1)

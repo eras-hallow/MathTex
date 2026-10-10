@@ -15,6 +15,10 @@ local function pixel(value: number): number
 	return math.max(0, math.ceil(value))
 end
 
+local function escapeRichText(text: string): string
+	return string.gsub(string.gsub(string.gsub(text, "&", "&amp;"), "<", "&lt;"), ">", "&gt;")
+end
+
 local function enableContainerFit(container: Frame, layout: Layout.Result, parent: Instance)
 	local scale = Instance.new("UIScale")
 	scale.Name = "FitToContainerScale"
@@ -86,11 +90,12 @@ function Native.render(layout: Layout.Result, parent: Instance, options: Options
 			label.Name = "Glyph"
 			label.BackgroundTransparency = 1
 			label.BorderSizePixel = 0
-			label.RichText = false
-			label.Text = item.text or ""
+			local textSize = math.max(1, math.floor((item.fontSize or options.FontSize) + 0.5))
+			label.RichText = true
+			label.Text = string.format('<font size="%d">%s</font>', textSize, escapeRichText(item.text or ""))
 			label.TextColor3 = options.Color
 			label.Font = options.Font
-			label.TextSize = math.max(1, math.floor(item.fontSize or options.FontSize + 0.5))
+			label.TextSize = options.FontSize
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextYAlignment = Enum.TextYAlignment.Center
 			label.TextWrapped = false

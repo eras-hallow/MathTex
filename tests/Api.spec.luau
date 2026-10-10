@@ -25,6 +25,13 @@ return function()
 	local quickExpression = MathTex.render(parent, "x_1")
 	assert(quickExpression:Measure().X > 0)
 	quickExpression:Destroy()
+
+	local richTextExpression = MathTex.new([=[\text{<b>&}]]=])
+	local richTextFrame = richTextExpression:Render(parent)
+	local richTextLabel = richTextFrame:FindFirstChildWhichIsA("TextLabel")
+	assert(richTextLabel ~= nil and richTextLabel.RichText)
+	assert(richTextLabel.Text == '<font size="32">&lt;b&gt;&amp;</font>')
+	richTextExpression:Destroy()
 	parent:Destroy()
 
 	local ok, problem = pcall(function()
