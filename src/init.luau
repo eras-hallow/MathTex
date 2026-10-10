@@ -1,9 +1,31 @@
 --!strict
 
-local AST = require(script.AST)
-local Layout = require(script.Layout)
-local Native = require(script.Backends.Native)
-local Parser = require(script.Parser)
+local moduleRoot: Instance = script
+if script:FindFirstChild("AST") == nil then
+	local parent = script.Parent
+	if parent == nil then
+		error("MathTex: init module must be parented with its sibling modules", 0)
+	end
+	moduleRoot = parent
+end
+
+local function requireChild(parent: Instance, name: string): any
+	local child = parent:FindFirstChild(name)
+	if child == nil or not child:IsA("ModuleScript") then
+		error(string.format("MathTex: expected ModuleScript '%s' under %s", name, parent:GetFullName()), 0)
+	end
+	return require(child)
+end
+
+local backends = moduleRoot:FindFirstChild("Backends")
+if backends == nil or not backends:IsA("Folder") then
+	error("MathTex: expected a Backends folder beside the init module", 0)
+end
+
+local AST = requireChild(moduleRoot, "AST")
+local Layout = requireChild(moduleRoot, "Layout")
+local Native = requireChild(backends, "Native")
+local Parser = requireChild(moduleRoot, "Parser")
 local TextService = game:GetService("TextService")
 
 local MathTex = {}
