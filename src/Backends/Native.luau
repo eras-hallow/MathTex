@@ -8,10 +8,59 @@ export type Options = {
 	Color: Color3,
 	Font: Enum.Font,
 	FontSize: number,
+	FitToContainer: boolean,
 }
 
 local function pixel(value: number): number
 	return math.max(0, math.ceil(value))
+end
+
+local function enableContainerFit(container: Frame, layout: Layout.Result, parent: Instance)
+	local scale = Instance.new("UIScale")
+	scale.Name = "FitToContainerScale"
+	scale.Parent = container
+
+	local connections: { RBXScriptConnection } = {}
+	local cameraConnection: RBXScriptConnection? = nil
+	local function updateScale(availableSize: Vector2)
+		scale.Scale = Layout.fitScale(layout, availableSize)
+	end
+	local function disconnect()
+		for _, connection in connections do
+			connection:Disconnect()
+		end
+		if cameraConnection ~= nil then
+			cameraConnection:Disconnect()
+			cameraConnection = nil
+		end
+	end
+
+	if parent:IsA("GuiObject") then
+		local function update()
+			updateScale(parent.AbsoluteSize)
+		end
+		table.insert(connections, parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(update))
+		update()
+	elseif parent:IsA("ScreenGui") then
+		local workspace = game:GetService("Workspace")
+		local function updateCamera()
+			if cameraConnection ~= nil then
+				cameraConnection:Disconnect()
+				cameraConnection = nil
+			end
+			local camera = workspace.CurrentCamera
+			if camera ~= nil then
+				cameraConnection = camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+					updateScale(camera.ViewportSize)
+				end)
+				updateScale(camera.ViewportSize)
+			end
+		end
+		table.insert(connections, workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(updateCamera))
+		updateCamera()
+	end
+
+	container.Destroying:Once(disconnect)
 end
 
 function Native.canRender(_layout: Layout.Result): (boolean, string?)
@@ -25,6 +74,11 @@ function Native.render(layout: Layout.Result, parent: Instance, options: Options
 	container.BorderSizePixel = 0
 	container.ClipsDescendants = false
 	container.Size = UDim2.fromOffset(pixel(layout.width), pixel(layout.height))
+	local fitToContainer = options.FitToContainer and (parent:IsA("GuiObject") or parent:IsA("ScreenGui"))
+	if fitToContainer then
+		container.AnchorPoint = Vector2.new(0.5, 0.5)
+		container.Position = UDim2.fromScale(0.5, 0.5)
+	end
 
 	for _, item in layout.items do
 		if item.kind == "Text" then
@@ -55,6 +109,9 @@ function Native.render(layout: Layout.Result, parent: Instance, options: Options
 	end
 
 	container.Parent = parent
+	if fitToContainer then
+		enableContainerFit(container, layout, parent)
+	end
 	return container
 end
 

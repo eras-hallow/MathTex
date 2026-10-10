@@ -13,6 +13,7 @@ export type Options = {
 	Color: Color3?,
 	Font: Enum.Font?,
 	Backend: "Auto" | "Native" | "Image"?,
+	FitToContainer: boolean?,
 }
 
 type ResolvedOptions = {
@@ -20,6 +21,7 @@ type ResolvedOptions = {
 	Color: Color3,
 	Font: Enum.Font,
 	Backend: "Auto" | "Native" | "Image",
+	FitToContainer: boolean,
 }
 
 export type Expression = {
@@ -43,6 +45,7 @@ local DEFAULT_OPTIONS: ResolvedOptions = {
 	Color = Color3.new(1, 1, 1),
 	Font = Enum.Font.SourceSans,
 	Backend = "Auto",
+	FitToContainer = true,
 }
 
 local function validateOptions(options: Options?): ResolvedOptions
@@ -54,7 +57,7 @@ local function validateOptions(options: Options?): ResolvedOptions
 		error("MathTex: options must be a table", 0)
 	end
 	for key in options do
-		if key ~= "FontSize" and key ~= "Color" and key ~= "Font" and key ~= "Backend" then
+		if key ~= "FontSize" and key ~= "Color" and key ~= "Font" and key ~= "Backend" and key ~= "FitToContainer" then
 			error("MathTex: unknown option '" .. tostring(key) .. "'", 0)
 		end
 	end
@@ -81,6 +84,12 @@ local function validateOptions(options: Options?): ResolvedOptions
 			error("MathTex: Backend must be 'Auto', 'Native', or 'Image'", 0)
 		end
 		resolved.Backend = options.Backend
+	end
+	if options.FitToContainer ~= nil then
+		if type(options.FitToContainer) ~= "boolean" then
+			error("MathTex: FitToContainer must be a boolean", 0)
+		end
+		resolved.FitToContainer = options.FitToContainer
 	end
 	if resolved.Backend == "Image" then
 		error("MathTex: the Image backend is not configured; use 'Auto' or 'Native'", 0)

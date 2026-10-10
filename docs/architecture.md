@@ -1,5 +1,7 @@
 # Architecture
 
+[English](architecture.en.md) | Français
+
 MathTex sépare la reconnaissance de la syntaxe, la représentation et le dessin :
 
 1. `Lexer` produit des tokens avec leur position (offset en octets).
@@ -10,3 +12,5 @@ MathTex sépare la reconnaissance de la syntaxe, la représentation et le dessin
 Le contrat interne d'un backend est constitué d'une vérification `canRender(layout)` et d'une opération `render(layout, parent, options)`. Seul le backend natif est actuellement fourni. `Auto` ne sélectionne que ce backend et signale l'absence de compatibilité au lieu de produire un résultat factice.
 
 L'API publique reste `MathTex.new(source, options)`, `expression:Measure()`, `expression:Render(parent)` et `expression:Destroy()`. Les erreurs de syntaxe, de validation et de rendu sont levées avec un message direct destiné à l'appelant.
+
+Le layout calcule une taille intrinsèque à partir de `FontSize`. Le backend natif applique ensuite, par défaut, un facteur uniforme plafonné à `1` pour faire tenir le rendu dans un `GuiObject` ou le viewport courant d'un `ScreenGui`. Il suit les changements de taille et libère ses connexions à la destruction du rendu. `FitToContainer = false` désactive cet ajustement.

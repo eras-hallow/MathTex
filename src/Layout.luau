@@ -178,4 +178,11 @@ function Layout.calculate(node: Node, fontSize: number, measureText: MeasureText
 	return layoutNode(node, fontSize, measureText)
 end
 
+function Layout.fitScale(layout: Result, availableSize: Vector2): number
+	if availableSize.X <= 0 or availableSize.Y <= 0 then
+		return 1
+	end
+	return math.min(1, availableSize.X / math.max(layout.width, 1), availableSize.Y / math.max(layout.height, 1))
+end
+
 return Layout

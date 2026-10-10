@@ -24,4 +24,8 @@ return function()
 
 	local nested = Layout.calculate(Parser.parse([[\sqrt{\frac{x_1}{y^2}}]]), 24, measureText)
 	assert(nested.width > fraction.width and nested.height > 0)
+
+	local halfSize = Vector2.new(simple.width / 2, simple.height / 2)
+	assert(math.abs(Layout.fitScale(simple, halfSize) - 0.5) < 0.001)
+	assert(Layout.fitScale(simple, Vector2.new(simple.width * 2, simple.height * 2)) == 1)
 end

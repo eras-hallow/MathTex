@@ -1,5 +1,7 @@
 # MathTex
 
+[English](README.en.md) | Français
+
 MathTex est une bibliothèque Luau expérimentale qui transforme un sous-ensemble explicite de la syntaxe mathématique inspirée de LaTeX en interface Roblox native. Elle ne compile pas du LaTeX et ne prétend pas être compatible avec LaTeX dans son ensemble.
 
 ## Statut
@@ -52,7 +54,7 @@ local rendered = equation:Render(script.Parent)
 equation:Destroy()
 ```
 
-`Render(parent)` accepte un `GuiObject` ou un `LayerCollector` (`ScreenGui`, par exemple) et retourne le `Frame` racine créé. Un nouvel appel à `Render` détruit le rendu précédent après la création du nouveau.
+`Render(parent)` accepte un `GuiObject` ou un `LayerCollector` (`ScreenGui`, par exemple) et retourne le `Frame` racine créé. Par défaut, le rendu s'adapte à la taille d'un `GuiObject` ou du viewport d'un `ScreenGui`; il se réduit sans dépasser sa taille de base et reste centré. Les autres `LayerCollector` conservent une taille fixe. Un nouvel appel à `Render` détruit le rendu précédent après la création du nouveau.
 
 ## Options
 
@@ -62,6 +64,7 @@ equation:Destroy()
 | `Color` | `Color3` | blanc | Couleur du texte et des barres. |
 | `Font` | `Enum.Font` | `Enum.Font.SourceSans` | Police native Roblox. |
 | `Backend` | `"Auto"`, `"Native"` ou `"Image"` | `"Auto"` | Auto choisit un backend compatible configuré. Native impose le rendu natif. Image échoue explicitement car aucun fournisseur d'images n'est inclus. |
+| `FitToContainer` | booléen | `true` | Réduit le rendu pour qu'il tienne dans un `GuiObject` ou un `ScreenGui`. Mettre à `false` pour conserver une taille fixe et un ancrage en haut à gauche. |
 
 Les sources dépassant 4096 octets, les options inconnues ou invalides, les commandes inconnues, les groupes malformés et les arguments manquants ou vides produisent une erreur explicite. Les espaces blancs ordinaires sont ignorés selon la convention mathématique.
 

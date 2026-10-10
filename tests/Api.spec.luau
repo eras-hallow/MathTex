@@ -16,6 +16,7 @@ return function()
 	parent.Parent = game:GetService("StarterGui")
 	local firstRender = expression:Render(parent)
 	assert(firstRender.Parent == parent and #firstRender:GetChildren() > 0)
+	assert(firstRender:FindFirstChildOfClass("UIScale") ~= nil)
 
 	local secondRender = expression:Render(parent)
 	assert(firstRender.Parent == nil and secondRender.Parent == parent)
@@ -32,4 +33,9 @@ return function()
 		MathTex.new("\\alpha", { FontSize = 0 })
 	end)
 	assert(not ok and string.find(tostring(problem), "FontSize", 1, true) ~= nil)
+
+	ok, problem = pcall(function()
+		MathTex.new("\\alpha", { FitToContainer = "yes" :: any })
+	end)
+	assert(not ok and string.find(tostring(problem), "FitToContainer", 1, true) ~= nil)
 end
