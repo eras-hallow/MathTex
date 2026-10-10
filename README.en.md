@@ -98,6 +98,8 @@ tests/
 default.project.json
 ```
 
+[![Architecture diagram of eras-hallow/mathtex](https://gitdiagram.com/eras-hallow/mathtex/diagram.png)](https://gitdiagram.com/eras-hallow/mathtex?utm_source=readme&utm_medium=picture)
+
 ## Contributing
 
 Contributions should add tests for new syntax and demonstrate the full lexer/parser/AST/layout/rendering path before claiming a feature is supported. Keep unknown commands as explicit errors and do not add fake backends. Open an issue to discuss API changes or extensions involving external services.
