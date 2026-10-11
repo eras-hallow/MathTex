@@ -57,6 +57,22 @@ return function()
 	end
 	local cases = Parser.parse([=[\begin{cases}x&x>0\\-x&x\le0\end{cases}]=]).children[1]
 	assert(cases.kind == "Delimited" and cases.left == "{" and cases.right == "")
+	local vector = Parser.parse([=[\vec{AB}]=]).children[1]
+	assert(vector.kind == "Accent" and vector.style == "vec")
+	local overline = Parser.parse([=[\overline{AB}]=]).children[1]
+	assert(overline.kind == "Accent" and overline.style == "overline")
+	local bold = Parser.parse([=[\mathbf{AB}]=]).children[1]
+	assert(bold.kind == "Styled" and bold.style == "bold")
+	local roman = Parser.parse([=[\mathrm{d}x]=]).children[1]
+	assert(roman.kind == "Styled" and roman.style == "roman")
+	local displayFraction = Parser.parse([=[\dfrac{a}{b}]=]).children[1]
+	local textFraction = Parser.parse([=[\tfrac{a}{b}]=]).children[1]
+	assert(displayFraction.kind == "Fraction" and displayFraction.size == "display")
+	assert(textFraction.kind == "Fraction" and textFraction.size == "text")
+	local aligned = Parser.parse([=[\begin{align}a&=b\\long&=c\end{align}]=]).children[1]
+	assert(aligned.kind == "Aligned" and #aligned.rows == 2 and #aligned.rows[1] == 2)
+	local nestedAligned = Parser.parse([=[\begin{aligned}a&=b\\c&=d\end{aligned}]=]).children[1]
+	assert(nestedAligned.kind == "Aligned" and #nestedAligned.rows == 2)
 
 	expectFailure("\\unknown", "unknown command")
 	expectFailure("{x", "missing closing brace")
@@ -70,5 +86,6 @@ return function()
 	expectFailure([=[\left(x]=], "missing \\right")
 	expectFailure([=[\right)]=], "no matching \\left")
 	expectFailure([=[\begin{matrix}a&b\\c\end{matrix}]=], "same number of columns")
-	expectFailure([=[\begin{align}x&=y\end{align}]=], "unsupported environment")
+	expectFailure([=[\begin{align}x=y\end{align}]=], "alignment point")
+	expectFailure([=[\begin{align}x&=y\\z&=w&=v\end{align}]=], "same number of columns")
 end

@@ -32,6 +32,12 @@ return function()
 	assert(richTextLabel ~= nil and richTextLabel.RichText)
 	assert(richTextLabel.Text == '<font size="32">&lt;b&gt;&amp;</font>')
 	richTextExpression:Destroy()
+
+	local boldExpression = MathTex.new([=[\mathbf{A}]=])
+	local boldFrame = boldExpression:Render(parent)
+	local boldLabel = boldFrame:FindFirstChildWhichIsA("TextLabel")
+	assert(boldLabel ~= nil and boldLabel.Text == '<b><font size="32">A</font></b>')
+	boldExpression:Destroy()
 	parent:Destroy()
 
 	local ok, problem = pcall(function()

@@ -22,8 +22,43 @@ return function()
 	end
 	assert(rules == 1)
 
+	local displayFraction = Layout.calculate(Parser.parse([=[\dfrac{a}{b}]=]), 20, measureText)
+	local textFraction = Layout.calculate(Parser.parse([=[\tfrac{a}{b}]=]), 20, measureText)
+	assert(displayFraction.items[1].fontSize == 20)
+	assert(textFraction.items[1].fontSize == 14)
+
 	local nested = Layout.calculate(Parser.parse([[\sqrt{\frac{x_1}{y^2}}]]), 24, measureText)
 	assert(nested.width > fraction.width and nested.height > 0)
+
+	local vector = Layout.calculate(Parser.parse([=[\vec{AB}]=]), 20, measureText)
+	local vectorRules = 0
+	for _, item in vector.items do
+		if item.kind == "Rule" then
+			vectorRules += 1
+		end
+	end
+	assert(vectorRules == 3 and vector.height > 20)
+
+	local accents = Layout.calculate(Parser.parse([=[\overline{AB}\underline{CD}\hat{x}\bar{y}]=]), 20, measureText)
+	assert(accents.height > 20 and #accents.items > 8)
+
+	local styled = Layout.calculate(Parser.parse([=[\mathbf{AB}\mathrm{d}x]=]), 20, measureText)
+	local hasBold = false
+	local hasRoman = false
+	for _, item in styled.items do
+		hasBold = hasBold or item.bold == true
+		hasRoman = hasRoman or item.roman == true
+	end
+	assert(hasBold and hasRoman)
+
+	local aligned = Layout.calculate(Parser.parse([=[\begin{align}a&=b\\long&=c\end{align}]=]), 20, measureText)
+	local equalsPositions: { number } = {}
+	for _, item in aligned.items do
+		if item.text == "=" then
+			table.insert(equalsPositions, item.x)
+		end
+	end
+	assert(#equalsPositions == 2 and equalsPositions[1] == equalsPositions[2])
 
 	local standaloneSum = Layout.calculate(Parser.parse([[\sum]]), 20, measureText)
 	assert(standaloneSum.items[1].fontSize == 29)

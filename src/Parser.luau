@@ -119,7 +119,7 @@ local function readEnvironmentName(state: State, command: Token): string
 	return table.concat(parts)
 end
 
-local function parseMatrixEnvironment(state: State, command: Token): Node
+local function parseEnvironment(state: State, command: Token): Node
 	local environments = {
 		matrix = { "", "" },
 		pmatrix = { "(", ")" },
@@ -131,7 +131,8 @@ local function parseMatrixEnvironment(state: State, command: Token): Node
 	}
 	local environmentName = readEnvironmentName(state, command)
 	local delimiters = environments[environmentName]
-	if delimiters == nil then
+	local isAligned = environmentName == "align" or environmentName == "aligned"
+	if delimiters == nil and not isAligned then
 		fail(command, "unsupported environment '" .. environmentName .. "'")
 	end
 
@@ -141,8 +142,11 @@ local function parseMatrixEnvironment(state: State, command: Token): Node
 	local function finishRow(token: Token)
 		if columnCount == nil then
 			columnCount = #row
+			if isAligned and (columnCount < 2 or columnCount % 2 ~= 0) then
+				fail(token, "aligned rows must have an even number of columns and at least one alignment point")
+			end
 		elseif #row ~= columnCount then
-			fail(token, "matrix rows must have the same number of columns")
+			fail(token, if isAligned then "aligned rows must have the same number of columns" else "matrix rows must have the same number of columns")
 		end
 		table.insert(rows, row)
 	end
@@ -178,6 +182,9 @@ local function parseMatrixEnvironment(state: State, command: Token): Node
 		end
 	end
 
+	if isAligned then
+		return AST.aligned(rows)
+	end
 	local matrix = AST.matrix(rows)
 	return AST.delimited(delimiters[1], AST.sequence({ matrix }), delimiters[2])
 end
@@ -237,13 +244,26 @@ parsePrimary = function(state: State): Node
 		elseif token.value == "right" then
 			fail(token, "\\right has no matching \\left")
 		elseif token.value == "begin" then
-			return parseMatrixEnvironment(state, token)
+			return parseEnvironment(state, token)
 		elseif token.value == "end" then
 			fail(token, "\\end has no matching \\begin")
-		elseif token.value == "frac" then
+		elseif token.value == "frac" or token.value == "dfrac" or token.value == "tfrac" then
 			local numerator = parseRequiredGroup(state, token)
 			local denominator = parseRequiredGroup(state, token)
-			return AST.fraction(numerator, denominator)
+			local size: AST.FractionSize = if token.value == "dfrac" then "display" elseif token.value == "tfrac" then "text" else "normal"
+			return AST.fraction(numerator, denominator, size)
+		elseif token.value == "vec" or token.value == "overline" or token.value == "underline" or token.value == "hat" or token.value == "bar" then
+			local body = parseRequiredGroup(state, token)
+			local style: AST.AccentStyle = if token.value == "vec" then "vec"
+				elseif token.value == "overline" then "overline"
+				elseif token.value == "underline" then "underline"
+				elseif token.value == "hat" then "hat"
+				else "bar"
+			return AST.accent(style, body)
+		elseif token.value == "mathbf" or token.value == "mathrm" then
+			local body = parseRequiredGroup(state, token)
+			local style: AST.TextStyle = if token.value == "mathbf" then "bold" else "roman"
+			return AST.styled(style, body)
 		elseif token.value == "sqrt" then
 			local index: Sequence? = nil
 			skipWhitespace(state)

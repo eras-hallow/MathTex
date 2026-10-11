@@ -91,8 +91,15 @@ function Native.render(layout: Layout.Result, parent: Instance, options: Options
 			label.BackgroundTransparency = 1
 			label.BorderSizePixel = 0
 			local textSize = math.max(1, math.floor((item.fontSize or options.FontSize) + 0.5))
+			local richText = string.format('<font size="%d">%s</font>', textSize, escapeRichText(item.text or ""))
+			if item.bold then
+				richText = "<b>" .. richText .. "</b>"
+			end
+			if item.roman then
+				richText = '<font face="SourceSansPro">' .. richText .. "</font>"
+			end
 			label.RichText = true
-			label.Text = string.format('<font size="%d">%s</font>', textSize, escapeRichText(item.text or ""))
+			label.Text = richText
 			label.TextColor3 = options.Color
 			label.Font = options.Font
 			label.TextSize = options.FontSize
@@ -109,6 +116,7 @@ function Native.render(layout: Layout.Result, parent: Instance, options: Options
 			rule.BorderSizePixel = 0
 			rule.Size = UDim2.fromOffset(math.max(1, pixel(item.width)), math.max(1, pixel(item.height)))
 			rule.Position = UDim2.fromOffset(pixel(item.x), pixel(item.y))
+			rule.Rotation = item.rotation or 0
 			rule.Parent = container
 		end
 	end

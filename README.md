@@ -73,14 +73,17 @@ Le parseur prend en charge les constructions suivantes (les espaces hors de `\te
 | Écriture | Exemple |
 | --- | --- |
 | Groupement et scripts | `x_{i+1}^{2}` ; un script sans accolades ne consomme qu'un seul atome (`x^ab` signifie `x` exposant `a`, puis `b`). |
-| Fractions et racines | `\frac{a}{b}` ; `\sqrt[3]{x}` |
+| Fractions et racines | `\frac{a}{b}` ; `\dfrac{a}{b}` (taille normale) ; `\tfrac{a}{b}` (taille réduite) ; `\sqrt[3]{x}` |
+| Accents mathématiques | `\vec{v}`, `\overline{AB}`, `\underline{x}`, `\hat{x}`, `\bar{x}` |
+| Styles de texte mathématique | `\mathbf{v}` pour le gras ; `\mathrm{d}` pour le romain. |
 | Texte littéral | `\text{vitesse moyenne}` ; le contenu, y compris les balises RichText, n'est pas interprété comme une commande. |
 | Opérateurs enregistrés | `\alpha`, `\times`, `\le`, `\sin`, `\sum`, etc. La liste complète est dans [Symbols.luau](./src/Symbols.luau). |
 | Délimiteurs | `\left( ... \right)` et variantes prises en charge, notamment `\left\{ ... \right\}`. |
 | Matrices | `\begin{bmatrix}a&b\\c&d\end{bmatrix}` ; les lignes doivent avoir le même nombre de colonnes. |
+| Équations alignées | `\begin{align}a&=b\\c&=d\end{align}` ; chaque ligne doit avoir un nombre pair de cellules, avec alignement sur `&`. `aligned` est également pris en charge. |
 | Espacement mathématique | `\,`, `\:`, `\;`, `\quad`, `\qquad`, `\!`. |
 
-Le parseur n'implémente pas le langage LaTeX complet : notamment `\newcommand`, `\displaystyle`, `\textbf`, `\color`, `\dfrac`, `array` et `align` ne sont pas pris en charge. Il n'y a pas de mode mathématique `$...$` ou `$$...$$`; passez directement l'expression sans délimiteurs de mode. Les commandes inconnues provoquent une erreur.
+Le parseur n'implémente pas le langage LaTeX complet : notamment `\newcommand`, `\displaystyle`, `\textbf`, `\color`, `align*`, `array` et les références automatiques d'équations ne sont pas pris en charge. Il n'y a pas de mode mathématique `$...$` ou `$$...$$`; passez directement l'expression sans délimiteurs de mode. Les commandes inconnues provoquent une erreur.
 
 `Render(parent)` accepte un `GuiObject` ou un `LayerCollector` (`ScreenGui`, par exemple) et retourne le `Frame` racine créé. Par défaut, le rendu s'adapte à la taille d'un `GuiObject` ou du viewport d'un `ScreenGui`; il se réduit sans dépasser sa taille de base et reste centré. Les autres `LayerCollector` conservent une taille fixe. Un nouvel appel à `Render` détruit le rendu précédent après la création du nouveau.
 
@@ -100,10 +103,9 @@ Les sources dépassant 4096 octets, les options inconnues ou invalides, les comm
 
 ## Limites connues
 
-- Ce projet n'est pas un moteur TeX complet: les macros, `array`, `align`, les styles mathématiques et de nombreux environnements ne sont pas pris en charge. `\left` et `\right` agrandissent les glyphes pris en charge, sans reproduire toute la typographie TeX des délimiteurs.
+- Ce projet n'est pas un moteur TeX complet: les macros, `array`, les styles mathématiques et de nombreux environnements ne sont pas pris en charge. `align` et `aligned` fournissent uniquement une grille d'alignement simple, sans numérotation d'équations ni espacement TeX complet. `\left` et `\right` agrandissent les glyphes pris en charge, sans reproduire toute la typographie TeX des délimiteurs.
 - Les commandes prises en charge sont uniquement celles répertoriées dans `src/Symbols.luau`, ainsi que les commandes structurelles et d'espacement décrites ci-dessus.
 - Les règles de placement et métriques sont une approximation typographique pour UI, pas un moteur TeX. Les polices peuvent différer dans leur prise en charge des glyphes Unicode.
-- Les tailles et placements des opérateurs sont des facteurs fixes; le moteur ne distingue pas les styles mathématiques en ligne et hors ligne.
 - Le backend image est absent. Roblox ne compile ni n'interprète les sources LaTeX directement. Une future extension devra fournir un fournisseur réel et autorisé (générateur externe ou ressources importées), un cache et une politique explicite d'échec/repli.
 - Aucun appel réseau ni aucune URL d'image n'est utilisé ou autorisé par cette version. Si une intégration réseau est développée, elle devra documenter les domaines autorisés dans les paramètres de sécurité Roblox, le mode de génération/chargement des ressources et le comportement hors ligne.
 

@@ -12,6 +12,9 @@ export type DrawItem = {
 	height: number,
 	text: string?,
 	fontSize: number?,
+	bold: boolean?,
+	roman: boolean?,
+	rotation: number?,
 }
 
 export type Result = {
@@ -48,6 +51,9 @@ local function shifted(items: { DrawItem }, x: number, y: number, into: { DrawIt
 			width = item.width,
 			height = item.height,
 			fontSize = item.fontSize,
+			bold = item.bold,
+			roman = item.roman,
+			rotation = item.rotation,
 		})
 	end
 end
@@ -80,6 +86,59 @@ local function layoutSequence(children: { Node }, fontSize: number, measureText:
 	return { width = maxX - minX, height = baseline + depth, baseline = baseline, items = items }
 end
 
+local function layoutGrid(
+	rows: { AST.MatrixRow },
+	fontSize: number,
+	measureText: MeasureText,
+	columnGapScale: number,
+	rowGapScale: number,
+	alignedColumns: boolean
+): Result
+	local cells: { { Result } } = {}
+	local columnWidths: { number } = {}
+	local rowHeights: { number } = {}
+	for rowIndex, row in rows do
+		local measuredRow: { Result } = {}
+		local rowHeight = 0
+		for columnIndex, cell in row do
+			local box = layoutSequence(cell.children, fontSize, measureText)
+			measuredRow[columnIndex] = box
+			columnWidths[columnIndex] = math.max(columnWidths[columnIndex] or 0, box.width)
+			rowHeight = math.max(rowHeight, box.height)
+		end
+		cells[rowIndex] = measuredRow
+		rowHeights[rowIndex] = rowHeight
+	end
+
+	local columnGap = fontSize * columnGapScale
+	local rowGap = fontSize * rowGapScale
+	local width = 0
+	for _, columnWidth in columnWidths do
+		width += columnWidth
+	end
+	width += math.max(0, #columnWidths - 1) * columnGap
+	local height = 0
+	for _, rowHeight in rowHeights do
+		height += rowHeight
+	end
+	height += math.max(0, #rowHeights - 1) * rowGap
+
+	local items: { DrawItem } = {}
+	local y = 0
+	for rowIndex, measuredRow in cells do
+		local x = 0
+		for columnIndex, box in measuredRow do
+			local horizontalOffset = if alignedColumns
+				then if columnIndex % 2 == 0 then 0 else columnWidths[columnIndex] - box.width
+				else (columnWidths[columnIndex] - box.width) / 2
+			shifted(box.items, x + horizontalOffset, y + (rowHeights[rowIndex] - box.height) / 2, items)
+			x += columnWidths[columnIndex] + columnGap
+		end
+		y += rowHeights[rowIndex] + rowGap
+	end
+	return { width = width, height = height, baseline = height / 2, items = items }
+end
+
 layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): Result
 	if node.kind == "Glyph" then
 		local glyphScale = if node.operatorStyle == "limits" then 1.45 elseif node.operatorStyle == "integral" then 1.35 else 1
@@ -93,8 +152,9 @@ layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): R
 	elseif node.kind == "Group" then
 		return layoutSequence(node.body.children, fontSize, measureText)
 	elseif node.kind == "Fraction" then
-		local numerator = layoutSequence(node.numerator.children, fontSize * 0.82, measureText)
-		local denominator = layoutSequence(node.denominator.children, fontSize * 0.82, measureText)
+		local fractionScale = if node.size == "display" then 1 elseif node.size == "text" then 0.7 else 0.82
+		local numerator = layoutSequence(node.numerator.children, fontSize * fractionScale, measureText)
+		local denominator = layoutSequence(node.denominator.children, fontSize * fractionScale, measureText)
 		local padding = math.max(2, fontSize * 0.12)
 		local gap = math.max(2, fontSize * 0.1)
 		local width = math.max(numerator.width, denominator.width) + padding * 2
@@ -145,6 +205,80 @@ layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): R
 			height = 1,
 		})
 		return { width = bodyX + body.width + 1, height = height, baseline = baseline - top, items = items }
+	elseif node.kind == "Accent" then
+		local body = layoutSequence(node.body.children, fontSize, measureText)
+		local items: { DrawItem } = {}
+		if node.style == "underline" then
+			shifted(body.items, 0, 0, items)
+			table.insert(items, {
+				kind = "Rule",
+				x = 0,
+				y = body.height + math.max(1, fontSize * 0.06),
+				width = body.width,
+				height = 1,
+			})
+			return {
+				width = body.width,
+				height = body.height + math.max(2, fontSize * 0.12),
+				baseline = body.baseline,
+				items = items,
+			}
+		elseif node.style == "overline" then
+			local gap = math.max(1, fontSize * 0.06)
+			shifted(body.items, 0, gap + 1, items)
+			table.insert(items, { kind = "Rule", x = 0, y = 0, width = body.width, height = 1 })
+			return { width = body.width, height = body.height + gap + 1, baseline = body.baseline + gap + 1, items = items }
+		elseif node.style == "vec" then
+			local headLength = math.min(fontSize * 0.35, body.width * 0.35)
+			local headHeight = headLength * 0.58
+			local arrowY = headHeight + 0.5
+			local markHeight = headHeight * 2 + 1
+			local gap = math.max(1, fontSize * 0.06)
+			shifted(body.items, 0, markHeight + gap, items)
+			local shaftWidth = body.width - headLength * 0.82
+			if shaftWidth > 0 then
+				table.insert(items, { kind = "Rule", x = 0, y = arrowY, width = shaftWidth, height = 1 })
+			end
+			local headCenterX = body.width - headLength * 0.41
+			table.insert(items, {
+				kind = "Rule",
+				x = headCenterX - headLength / 2,
+				y = arrowY - headHeight / 2 - 0.5,
+				width = headLength,
+				height = 1,
+				rotation = -35,
+			})
+			table.insert(items, {
+				kind = "Rule",
+				x = headCenterX - headLength / 2,
+				y = arrowY + headHeight / 2 - 0.5,
+				width = headLength,
+				height = 1,
+				rotation = 35,
+			})
+			return {
+				width = body.width,
+				height = markHeight + gap + body.height,
+				baseline = markHeight + gap + body.baseline,
+				items = items,
+			}
+		end
+
+		local mark = textResult(if node.style == "hat" then "ˆ" else "¯", fontSize * 0.7, measureText)
+		local bodyY = mark.height * 0.65 + math.max(1, fontSize * 0.04)
+		local width = math.max(body.width, mark.width)
+		shifted(mark.items, (width - mark.width) / 2, 0, items)
+		shifted(body.items, (width - body.width) / 2, bodyY, items)
+		return { width = width, height = bodyY + body.height, baseline = bodyY + body.baseline, items = items }
+	elseif node.kind == "Styled" then
+		local body = layoutSequence(node.body.children, fontSize, measureText)
+		for _, item in body.items do
+			if item.kind == "Text" then
+				item.bold = item.bold or node.style == "bold"
+				item.roman = item.roman or node.style == "roman"
+			end
+		end
+		return body
 	elseif node.kind == "Scripts" then
 		local operatorStyle = if node.base.kind == "Glyph" then node.base.operatorStyle else nil
 		local base = layoutNode(node.base, fontSize, measureText)
@@ -199,46 +333,9 @@ layoutNode = function(node: Node, fontSize: number, measureText: MeasureText): R
 			items = items,
 		}
 	elseif node.kind == "Matrix" then
-		local cells: { { Result } } = {}
-		local columnWidths: { number } = {}
-		local rowHeights: { number } = {}
-		for rowIndex, row in node.rows do
-			local measuredRow: { Result } = {}
-			local rowHeight = 0
-			for columnIndex, cell in row do
-				local box = layoutSequence(cell.children, fontSize, measureText)
-				measuredRow[columnIndex] = box
-				columnWidths[columnIndex] = math.max(columnWidths[columnIndex] or 0, box.width)
-				rowHeight = math.max(rowHeight, box.height)
-			end
-			cells[rowIndex] = measuredRow
-			rowHeights[rowIndex] = rowHeight
-		end
-
-		local columnGap = fontSize * 0.8
-		local rowGap = fontSize * 0.35
-		local width = 0
-		for _, columnWidth in columnWidths do
-			width += columnWidth
-		end
-		width += math.max(0, #columnWidths - 1) * columnGap
-		local height = 0
-		for _, rowHeight in rowHeights do
-			height += rowHeight
-		end
-		height += math.max(0, #rowHeights - 1) * rowGap
-
-		local items: { DrawItem } = {}
-		local y = 0
-		for rowIndex, measuredRow in cells do
-			local x = 0
-			for columnIndex, box in measuredRow do
-				shifted(box.items, x + (columnWidths[columnIndex] - box.width) / 2, y + (rowHeights[rowIndex] - box.height) / 2, items)
-				x += columnWidths[columnIndex] + columnGap
-			end
-			y += rowHeights[rowIndex] + rowGap
-		end
-		return { width = width, height = height, baseline = height / 2, items = items }
+		return layoutGrid(node.rows, fontSize, measureText, 0.8, 0.35, false)
+	elseif node.kind == "Aligned" then
+		return layoutGrid(node.rows, fontSize, measureText, 0.2, 0.35, true)
 	elseif node.kind == "Delimited" then
 		local body = layoutSequence(node.body.children, fontSize, measureText)
 		local delimiterSize = math.max(fontSize, body.height * 1.12)
