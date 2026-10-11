@@ -29,6 +29,14 @@ Prototype utilisable pour des expressions mathématiques courantes. L'API publiq
 
 ## Installation et synchronisation Studio
 
+### Installation recommandée : plugin Roblox
+
+Installez le [plugin MathTex depuis le Creator Store](https://create.roblox.com/store/asset/125824417127294/MathTex), puis cliquez sur **InstallMathTex** dans sa barre d'outils. Le plugin télécharge MathTex dans `ReplicatedStorage.MathTex`.
+
+Pour mettre MathTex à jour, relancez **InstallMathTex** : le plugin télécharge d'abord la nouvelle version, remplace l'ancienne installation complète, puis nettoie l'ancien module. Ne mélangez pas cette installation avec une copie gérée par Rojo.
+
+### Développement avec Rojo
+
 Clonez le dépôt, puis ouvrez `default.project.json` dans Rojo ou lancez :
 
 ```sh
@@ -47,6 +55,10 @@ local equation = MathTex.render(
   [[\left(\frac{\text{vitesse moyenne}}{2a}\right)^2]],
   { FontSize = 32, Color = Color3.new(1, 1, 1) }
 )
+
+if equation == nil then
+  return -- L'erreur de syntaxe est déjà affichée en rouge dans le conteneur.
+end
 
 local size = equation:Measure()
 
@@ -85,7 +97,7 @@ Le parseur prend en charge les constructions suivantes (les espaces hors de `\te
 
 Le parseur n'implémente pas le langage LaTeX complet : notamment `\newcommand`, `\displaystyle`, `\textbf`, `\color`, `align*`, `array` et les références automatiques d'équations ne sont pas pris en charge. Il n'y a pas de mode mathématique `$...$` ou `$$...$$`; passez directement l'expression sans délimiteurs de mode. Les commandes inconnues provoquent une erreur.
 
-`Render(parent)` accepte un `GuiObject` ou un `LayerCollector` (`ScreenGui`, par exemple) et retourne le `Frame` racine créé. Par défaut, le rendu s'adapte à la taille d'un `GuiObject` ou du viewport d'un `ScreenGui`; il se réduit sans dépasser sa taille de base et reste centré. Les autres `LayerCollector` conservent une taille fixe. Un nouvel appel à `Render` détruit le rendu précédent après la création du nouveau.
+`Render(parent)` accepte un `GuiObject` ou un `LayerCollector` (`ScreenGui`, par exemple) et retourne le `Frame` racine créé. Par défaut, le rendu s'adapte à la taille d'un `GuiObject` ou du viewport d'un `ScreenGui`; il se réduit sans dépasser sa taille de base et reste centré. Lorsque le conteneur n'a pas encore de taille, le rendu est temporairement masqué jusqu'à ce qu'une taille soit disponible. Les autres `LayerCollector` conservent une taille fixe. Un nouvel appel à `Render` détruit le rendu précédent après la création du nouveau.
 
 ## Options
 
@@ -97,9 +109,9 @@ Le parseur n'implémente pas le langage LaTeX complet : notamment `\newcommand`,
 | `Backend` | `"Auto"`, `"Native"` ou `"Image"` | `"Auto"` | Auto choisit un backend compatible configuré. Native impose le rendu natif. Image échoue explicitement car aucun fournisseur d'images n'est inclus. |
 | `FitToContainer` | booléen | `true` | Réduit le rendu pour qu'il tienne dans un `GuiObject` ou un `ScreenGui`. Mettre à `false` pour conserver une taille fixe et un ancrage en haut à gauche. |
 
-Pour un affichage direct, `MathTex.render(parent, source, options)` crée et affiche l'expression en un appel, puis retourne l'objet pour le mesurer ou le détruire. L'API `MathTex.new(...):Render(parent)` reste disponible si la mesure doit précéder le rendu.
+Pour un affichage direct, `MathTex.render(parent, source, options)` crée et affiche l'expression en un appel, puis retourne l'objet pour le mesurer ou le détruire. En cas d'erreur de syntaxe ou d'options, la fonction affiche le message en rouge dans le conteneur et retourne `nil`. Les erreurs de `MathTex.new(...)` restent levées normalement. L'API `MathTex.new(...):Render(parent)` reste disponible si la mesure doit précéder le rendu; les erreurs de rendu y sont affichées en rouge dans le conteneur.
 
-Les sources dépassant 4096 octets, les options inconnues ou invalides, les commandes inconnues, les groupes malformés et les arguments manquants ou vides produisent une erreur explicite. Les espaces blancs ordinaires sont ignorés selon la convention mathématique.
+Les sources dépassant 4096 octets, les options inconnues ou invalides, les commandes inconnues, les groupes malformés et les arguments manquants ou vides sont des erreurs explicites : `MathTex.new` les lève, tandis que `MathTex.render` les affiche en rouge et retourne `nil`. Les espaces blancs ordinaires sont ignorés selon la convention mathématique.
 
 ## Limites connues
 

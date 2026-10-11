@@ -11,8 +11,8 @@ MathTex separates syntax recognition, representation, and drawing:
 
 A backend's internal contract consists of a `canRender(layout)` check and a `render(layout, parent, options)` operation. Only the native backend is currently provided. `Auto` selects only that backend and reports missing compatibility instead of producing a fake result.
 
-The public API remains `MathTex.new(source, options)`, `expression:Measure()`, `expression:Render(parent)`, and `expression:Destroy()`. Syntax, validation, and rendering errors are raised with a direct message for the caller.
+The public API remains `MathTex.new(source, options)`, `expression:Measure()`, `expression:Render(parent)`, and `expression:Destroy()`. `MathTex.new` raises syntax and validation errors. `MathTex.render` displays those errors in red in the container and returns `nil`; errors in `expression:Render(parent)` are also displayed in the container.
 
 `MathTex.render(parent, source, options)` is the one-call shortcut to create and display an expression while returning the object for measurement or destruction.
 
-Layout computes intrinsic dimensions from `FontSize`. By default, the native backend then applies a uniform scale capped at `1` so rendering fits a `GuiObject` or the current `ScreenGui` viewport. It tracks size changes and releases its connections when the rendering is destroyed. Set `FitToContainer = false` to disable this behavior.
+Layout computes intrinsic dimensions from `FontSize`. By default, the native backend then applies a uniform scale capped at `1` so rendering fits a `GuiObject` or the current `ScreenGui` viewport. A zero available size temporarily hides the rendering instead of letting its primitives overflow. It tracks size changes and releases its connections when the rendering is destroyed. Set `FitToContainer = false` to disable this behavior.

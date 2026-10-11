@@ -125,6 +125,40 @@ local function measure(ast: AST.Sequence, options: ResolvedOptions): Layout.Resu
 	end)
 end
 
+local function validateParent(parent: Instance)
+	if typeof(parent) ~= "Instance" or not (parent:IsA("GuiObject") or parent:IsA("LayerCollector")) then
+		error("MathTex: parent must be a GuiObject or LayerCollector", 0)
+	end
+end
+
+local function renderError(parent: Instance, problem: any): Frame
+	local previous = parent:FindFirstChild("MathTex")
+	if previous ~= nil and previous:IsA("Frame") and previous:GetAttribute("MathTexRendered") == true then
+		previous:Destroy()
+	end
+
+	local container = Instance.new("Frame")
+	container.Name = "MathTex"
+	container:SetAttribute("MathTexRendered", true)
+	container.BackgroundTransparency = 1
+	container.BorderSizePixel = 0
+	container.Size = UDim2.fromScale(1, 1)
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Error"
+	label.BackgroundTransparency = 1
+	label.BorderSizePixel = 0
+	label.Size = UDim2.fromScale(1, 1)
+	label.Text = "MathTex error: " .. tostring(problem)
+	label.TextColor3 = Color3.fromRGB(255, 70, 70)
+	label.TextSize = 16
+	label.TextWrapped = true
+	label.RichText = false
+	label.Parent = container
+	container.Parent = parent
+	return container
+end
+
 function MathTex.new(source: string, options: Options?): Expression
 	if type(source) ~= "string" then
 		error("MathTex: source must be a string", 0)
@@ -159,22 +193,32 @@ function Expression:Render(parent: Instance): Frame
 	if self._destroyed then
 		error("MathTex: cannot render a destroyed expression", 0)
 	end
-	if typeof(parent) ~= "Instance" or not (parent:IsA("GuiObject") or parent:IsA("LayerCollector")) then
-		error("MathTex: parent must be a GuiObject or LayerCollector", 0)
+	validateParent(parent)
+
+	local ok, result = pcall(function()
+		local layout = measure(self._ast, self.Options)
+		if #layout.items > MAX_RENDER_ITEMS then
+			error(string.format("MathTex: expression needs %d render items; the limit is %d", #layout.items, MAX_RENDER_ITEMS), 0)
+		end
+		local available, reason = Native.canRender(layout)
+		if self.Options.Backend == "Native" and not available then
+			error("MathTex: native backend cannot render this expression: " .. (reason or "unsupported expression"), 0)
+		elseif self.Options.Backend == "Auto" and not available then
+			error("MathTex: no configured backend can render this expression: " .. (reason or "unsupported expression"), 0)
+		end
+
+		return Native.render(layout, parent, self.Options)
+	end)
+	if not ok then
+		if self._rendered ~= nil then
+			self._rendered:Destroy()
+		end
+		local rendered = renderError(parent, result)
+		self._rendered = rendered
+		return rendered
 	end
 
-	local layout = measure(self._ast, self.Options)
-	if #layout.items > MAX_RENDER_ITEMS then
-		error(string.format("MathTex: expression needs %d render items; the limit is %d", #layout.items, MAX_RENDER_ITEMS), 0)
-	end
-	local available, reason = Native.canRender(layout)
-	if self.Options.Backend == "Native" and not available then
-		error("MathTex: native backend cannot render this expression: " .. (reason or "unsupported expression"), 0)
-	elseif self.Options.Backend == "Auto" and not available then
-		error("MathTex: no configured backend can render this expression: " .. (reason or "unsupported expression"), 0)
-	end
-
-	local rendered = Native.render(layout, parent, self.Options)
+	local rendered = result :: Frame
 	if self._rendered ~= nil then
 		self._rendered:Destroy()
 	end
@@ -190,8 +234,14 @@ function Expression:Destroy()
 	self._destroyed = true
 end
 
-function MathTex.render(parent: Instance, source: string, options: Options?): Expression
-	local expression = MathTex.new(source, options)
+function MathTex.render(parent: Instance, source: string, options: Options?): Expression?
+	validateParent(parent)
+	local ok, result = pcall(MathTex.new, source, options)
+	if not ok then
+		renderError(parent, result)
+		return nil
+	end
+	local expression = result :: Expression
 	expression:Render(parent)
 	return expression
 end

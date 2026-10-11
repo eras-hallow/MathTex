@@ -11,8 +11,8 @@ MathTex sépare la reconnaissance de la syntaxe, la représentation et le dessin
 
 Le contrat interne d'un backend est constitué d'une vérification `canRender(layout)` et d'une opération `render(layout, parent, options)`. Seul le backend natif est actuellement fourni. `Auto` ne sélectionne que ce backend et signale l'absence de compatibilité au lieu de produire un résultat factice.
 
-L'API publique reste `MathTex.new(source, options)`, `expression:Measure()`, `expression:Render(parent)` et `expression:Destroy()`. Les erreurs de syntaxe, de validation et de rendu sont levées avec un message direct destiné à l'appelant.
+L'API publique reste `MathTex.new(source, options)`, `expression:Measure()`, `expression:Render(parent)` et `expression:Destroy()`. `MathTex.new` lève les erreurs de syntaxe et de validation. `MathTex.render` affiche ces erreurs en rouge dans le conteneur et retourne `nil`; une erreur lors de `expression:Render(parent)` est également affichée dans le conteneur.
 
 `MathTex.render(parent, source, options)` est le raccourci pour créer et afficher une expression en un appel, tout en retournant l'objet pour le mesurer ou le détruire.
 
-Le layout calcule une taille intrinsèque à partir de `FontSize`. Le backend natif applique ensuite, par défaut, un facteur uniforme plafonné à `1` pour faire tenir le rendu dans un `GuiObject` ou le viewport courant d'un `ScreenGui`. Il suit les changements de taille et libère ses connexions à la destruction du rendu. `FitToContainer = false` désactive cet ajustement.
+Le layout calcule une taille intrinsèque à partir de `FontSize`. Le backend natif applique ensuite, par défaut, un facteur uniforme plafonné à `1` pour faire tenir le rendu dans un `GuiObject` ou le viewport courant d'un `ScreenGui`. Une taille disponible nulle masque temporairement le rendu plutôt que de laisser les primitives déborder. Il suit les changements de taille et libère ses connexions à la destruction du rendu. `FitToContainer = false` désactive cet ajustement.

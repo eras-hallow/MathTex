@@ -16,7 +16,7 @@ local FILES = {
 }
 
 local toolbar = plugin:CreateToolbar("MathTex")
-local installButton = toolbar:CreateButton("InstallMathTex", "Download MathTex into ReplicatedStorage", "")
+local installButton = toolbar:CreateButton("InstallMathTex", "Install or update MathTex in ReplicatedStorage", "")
 
 local function getOrCreateFolder(parent: Instance, name: string): Folder
 	local existing = parent:FindFirstChild(name)
@@ -34,10 +34,6 @@ local function getOrCreateFolder(parent: Instance, name: string): Folder
 end
 
 local function install()
-	if ReplicatedStorage:FindFirstChild("MathTex") ~= nil then
-		error("MathTex installer: ReplicatedStorage.MathTex already exists; rename or remove it before installing", 0)
-	end
-
 	local staging = Instance.new("ModuleScript")
 	staging.Name = "MathTex_Installing_" .. HttpService:GenerateGUID(false)
 	staging.Parent = ReplicatedStorage
@@ -65,10 +61,23 @@ local function install()
 			end)
 		end
 
-		if ReplicatedStorage:FindFirstChild("MathTex") ~= nil then
-			error("MathTex installer: ReplicatedStorage.MathTex appeared during installation", 0)
+		local previous = ReplicatedStorage:FindFirstChild("MathTex")
+		if previous ~= nil then
+			previous.Name = "MathTex_Previous_" .. HttpService:GenerateGUID(false)
 		end
-		staging.Name = "MathTex"
+
+		local renamed, renameProblem = pcall(function()
+			staging.Name = "MathTex"
+		end)
+		if not renamed then
+			if previous ~= nil then
+				previous.Name = "MathTex"
+			end
+			error(renameProblem, 0)
+		end
+		if previous ~= nil then
+			previous:Destroy()
+		end
 	end)
 
 	if not ok then
@@ -76,7 +85,7 @@ local function install()
 		error("MathTex installer failed: " .. tostring(problem), 0)
 	end
 
-	print("MathTex installed at ReplicatedStorage.MathTex")
+	print("MathTex installed or updated at ReplicatedStorage.MathTex")
 end
 
 installButton.Click:Connect(function()

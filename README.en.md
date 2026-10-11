@@ -29,6 +29,14 @@ Usable prototype for common mathematical expressions. The public API is intentio
 
 ## Installation and Studio Sync
 
+### Recommended: Roblox plugin
+
+Install the [MathTex plugin from the Creator Store](https://create.roblox.com/store/asset/125824417127294/MathTex), then click **InstallMathTex** in its toolbar. The plugin downloads MathTex into `ReplicatedStorage.MathTex`.
+
+To update MathTex, click **InstallMathTex** again. The plugin downloads the new version first, replaces the complete previous installation, and then cleans up the old module. Do not mix this installation with a Rojo-managed copy.
+
+### Development with Rojo
+
 Clone the repository, then open `default.project.json` in Rojo or run:
 
 ```sh
@@ -47,6 +55,10 @@ local equation = MathTex.render(
   [[\left(\frac{\text{average speed}}{2a}\right)^2]],
   { FontSize = 32, Color = Color3.new(1, 1, 1) }
 )
+
+if equation == nil then
+  return -- The syntax error is already displayed in red in the container.
+end
 
 local size = equation:Measure()
 
@@ -85,7 +97,7 @@ The parser supports these constructs (whitespace outside `\text{...}` is ignored
 
 The parser does not implement full LaTeX: `\newcommand`, `\displaystyle`, `\textbf`, `\color`, `align*`, `array`, and automatic equation references are not supported. There is no `$...$` or `$$...$$` math mode; pass the expression directly without math-mode delimiters. Unknown commands raise an error.
 
-`Render(parent)` accepts a `GuiObject` or `LayerCollector` (such as `ScreenGui`) and returns the created root `Frame`. By default, rendering fits a `GuiObject` or the `ScreenGui` viewport, shrinking uniformly without exceeding its base size and staying centered. Other `LayerCollector` instances retain a fixed size. Calling `Render` again destroys the previous rendering after creating the new one.
+`Render(parent)` accepts a `GuiObject` or `LayerCollector` (such as `ScreenGui`) and returns the created root `Frame`. By default, rendering fits a `GuiObject` or the `ScreenGui` viewport, shrinking uniformly without exceeding its base size and staying centered. If the container has no size yet, rendering is temporarily hidden until a size becomes available. Other `LayerCollector` instances retain a fixed size. Calling `Render` again destroys the previous rendering after creating the new one.
 
 ## Options
 
@@ -97,9 +109,9 @@ The parser does not implement full LaTeX: `\newcommand`, `\displaystyle`, `\text
 | `Backend` | `"Auto"`, `"Native"`, or `"Image"` | `"Auto"` | Auto selects a configured compatible backend. Native forces native rendering. Image fails explicitly because no image provider is included. |
 | `FitToContainer` | boolean | `true` | Shrinks rendering to fit a `GuiObject` or `ScreenGui`. Set to `false` to keep a fixed size and top-left anchor. |
 
-For direct display, `MathTex.render(parent, source, options)` creates and renders an expression in one call, then returns the object for measurement or destruction. The `MathTex.new(...):Render(parent)` API remains available when you need to measure before rendering.
+For direct display, `MathTex.render(parent, source, options)` creates and renders an expression in one call, then returns the object for measurement or destruction. On syntax or option errors, it displays the error in red in the container and returns `nil`. Errors from `MathTex.new(...)` continue to raise normally. The `MathTex.new(...):Render(parent)` API remains available when you need to measure before rendering; rendering errors are displayed in red in the container.
 
-Sources longer than 4096 bytes, unknown or invalid options, unknown commands, malformed groups, and missing or empty arguments produce explicit errors. Ordinary whitespace is ignored according to mathematical convention.
+Sources longer than 4096 bytes, unknown or invalid options, unknown commands, malformed groups, and missing or empty arguments are explicit errors: `MathTex.new` raises them, while `MathTex.render` displays them in red and returns `nil`. Ordinary whitespace is ignored according to mathematical convention.
 
 ## Known Limitations
 

@@ -99,6 +99,8 @@ return function()
 	local halfSize = Vector2.new(simple.width / 2, simple.height / 2)
 	assert(math.abs(Layout.fitScale(simple, halfSize) - 0.5) < 0.001)
 	assert(Layout.fitScale(simple, Vector2.new(simple.width * 2, simple.height * 2)) == 1)
+	assert(Layout.fitScale(simple, Vector2.zero) == 0)
+	assert(Layout.fitScale(simple, Vector2.new(0, simple.height)) == 0)
 
 	local text = Layout.calculate(Parser.parse([=[\text{vitesse moyenne}]=]), 20, measureText)
 	assert(text.width > Layout.calculate(Parser.parse("vitesse"), 20, measureText).width)

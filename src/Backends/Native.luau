@@ -58,6 +58,8 @@ local function enableContainerFit(container: Frame, layout: Layout.Result, paren
 					updateScale(camera.ViewportSize)
 				end)
 				updateScale(camera.ViewportSize)
+			else
+				updateScale(Vector2.zero)
 			end
 		end
 		table.insert(connections, workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(updateCamera))
@@ -74,6 +76,7 @@ end
 function Native.render(layout: Layout.Result, parent: Instance, options: Options): Frame
 	local container = Instance.new("Frame")
 	container.Name = "MathTex"
+	container:SetAttribute("MathTexRendered", true)
 	container.BackgroundTransparency = 1
 	container.BorderSizePixel = 0
 	container.ClipsDescendants = false
